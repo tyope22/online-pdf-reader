@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="description" content="A captivating and fast PDF viewer. Features include swipe navigation,automatic bookmarking, live clock, vibrant UI, and touch-optimized overlay controls.">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-    <style>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <style>
         /* General Body and Container Styling */
         body { 
             font-family: 'Poppins', sans-serif; 
@@ -200,7 +200,8 @@
         <canvas id="pdf-canvas"></canvas>
     </div>
 
-    </main> <script>
+    </main> <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
         let pdfDoc = null;
