@@ -166,6 +166,24 @@
             #floating-page-info { top: 10px; right: 10px; font-size: 0.8em; padding: 6px 12px; }
             #live-clock { top: 10px; font-size: 1em; }
         }
+      /* NEW BUTTON STYLING for Screenshot/Download */
+        #downloadPageImage {
+            padding: 10px 20px;
+            background: linear-gradient(45deg, #009688, #4db6ac); /* Teal/Mint color gradient */
+            color: white;
+            font-weight: 700;
+            font-size: 1em;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 150, 136, 0.4);
+            border: none;
+            margin-left: 10px; /* Space it from the Choose File button */
+        }
+        #downloadPageImage:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 150, 136, 0.6);
+        }
     </style>
 </head>
 <body>
@@ -179,9 +197,13 @@
         
         <input type="file" id="pdfFile" accept="application/pdf">
         
-        <label for="pdfFile" id="custom-file-label">
+    <label for="pdfFile" id="custom-file-label">
             📂 Choose PDF File
         </label>
+
+        <button id="downloadPageImage" onclick="downloadScreenshot()" style="display: none;">
+            🖼️ Capture Page Image
+        </button>
         
     </div>
 
@@ -202,6 +224,28 @@
 
     </main> <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script>
+        window.downloadScreenshot = function() {
+            if (!pdfDoc) {
+                alert("Please load a PDF file first!");
+                return;
+            }
+
+            // 1. Get the image data from the canvas
+            const imageDataURL = canvas.toDataURL("image/png"); // "image/png" gives better quality than "image/jpeg"
+
+            // 2. Create a temporary <a> element to trigger download
+            const link = document.createElement('a');
+            
+            // Generate a filename based on the PDF name and current page number
+            let pdfName = fileIdentifier.split('_')[0].replace(/\.pdf$/i, '');
+            link.download = `${pdfName}_page_${pageNum}.png`;
+
+            // 3. Set the download link and click it
+            link.href = imageDataURL;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
         let pdfDoc = null;
@@ -351,6 +395,7 @@
                         
                         pdfContainerWrapper.style.display = 'inline-block';
                         floatingPageInfo.style.display = 'block';
+                        document.getElementById('downloadPageImage').style.display = 'inline-block'; // <-- ADD THIS LINE
 
                         // 2. Check for bookmark
                         let startPage = getBookmark();
