@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>online PDF Viewer</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <style>
+        /* General Body and Container Styling */
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            text-align: center; 
+            margin: 0; 
+            padding: 20px 10px; 
+            background: linear-gradient(135deg, #a7e0ed 0%, #b2ebf2 100%); 
+            color: #333; 
+        }
+        .container { 
+            max-width: 800px; 
+            margin: auto; 
+            background: rgba(255, 255, 255, 0.7); 
+            backdrop-filter: blur(10px); 
+            -webkit-backdrop-filter: blur(10px); 
+            padding: 30px; 
+            border-radius: 20px; 
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15); 
+            border: 1px solid rgba(255, 255, 255, 0.3); 
+            position: relative; 
+        }
+        
+        /* --- STYLED TITLE UPDATE --- */
+        h1 { 
+            color: #00838f; 
+            font-weight: 900; 
+            margin-bottom: 5px; 
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1); 
+            font-size: 2.2em;
+        }
+        p { 
+            color: #555; 
+            margin-bottom: 25px; 
+            font-size: 1.1em;
+        }
+
+        /* --- LIVE CLOCK STYLING --- */
+        #live-clock {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.1em;
+            font-weight: 700;
+            color: #00bcd4;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 5px 15px;
+            border-radius: 15px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            z-index: 20;
+        }
+
+        /* Custom Colorful Button Styling (Unchanged) */
+        #custom-file-label {
+            display: inline-block;
+            padding: 15px 30px;
+            background: linear-gradient(45deg, #00bcd4, #00e5ff); 
+            color: white;
+            font-weight: 700;
+            font-size: 1.1em;
+            border-radius: 30px; 
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 15px rgba(0, 188, 212, 0.5); 
+            margin-bottom: 30px;
+            border: none;
+        }
+
+        #custom-file-label:hover {
+            transform: translateY(-3px); 
+            box-shadow: 0 10px 20px rgba(0, 188, 212, 0.7);
+        }
+
+        /* Hide the ugly default file input */
+        #pdfFile {
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            position: absolute;
+            z-index: -1;
+        }
+
+
+        /* PDF DISPLAY AREA CONTAINER (Unchanged) */
+        #pdf-container-wrapper {
+            position: relative; 
+            display: inline-block; 
+            margin-top: 25px; 
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35); 
+            border-radius: 12px;
+            overflow: hidden;
+            border: 4px solid #00bcd4;
+        }
+        
+        #pdf-canvas { 
+            display: block; 
+            max-width: 100%; 
+            height: auto;
+            border-radius: 8px; 
+            touch-action: pan-y; 
+        }
+        
+        /* OVERLAY ARROW STYLING (Unchanged) */
+        .page-nav-overlay {
+            position: absolute;
+            top: 0;
+            width: 15%; 
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 10; 
+            transition: background-color 0.2s;
+        }
+
+        .page-nav-overlay:hover { background-color: rgba(0, 0, 0, 0.1); }
+        #prev-overlay { left: 0; }
+        #next-overlay { right: 0; }
+
+        .nav-icon {
+            font-size: 4em; 
+            color: rgba(0, 188, 212, 0.8); 
+            font-weight: 900;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 1); 
+            pointer-events: none; 
+        }
+
+        /* FLOATING PAGE INFO BADGE (Unchanged) */
+        #floating-page-info {
+            display: none; 
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 8px 15px;
+            background-color: #00bcd4;
+            color: white;
+            border-radius: 20px; 
+            font-size: 0.9em;
+            font-weight: 600;
+            z-index: 15; 
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            opacity: 0.95;
+        }
+        #page-controls { display: none; }
+
+        /* Media Queries (Unchanged) */
+        @media (max-width: 600px) {
+            .container { padding: 20px; border-radius: 15px; }
+            .nav-icon { font-size: 3em; }
+            #floating-page-info { top: 10px; right: 10px; font-size: 0.8em; padding: 6px 12px; }
+            #live-clock { top: 10px; font-size: 1em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="live-clock"></div>
+        
+        <h1>online  PDF  Viewer</h1>
+        <p>Select your local PDF file below to view it instantly. Swipe or tap the edges to turn pages.</p>
+        
+        <input type="file" id="pdfFile" accept="application/pdf">
+        
+        <label for="pdfFile" id="custom-file-label">
+            📂 Choose PDF File
+        </label>
+        
+        <div id="page-controls" style="display: none;">
+            <button id="prev">&larr; Previous</button>
+            <span id="page-info">Page: <span id="page_num_old"></span> / <span id="page_count_old"></span></span>
+            <button id="next">Next &rarr;</button>
+        </div>
+    </div>
+
+    <div id="pdf-container-wrapper">
+        <div id="floating-page-info">
+            Page <span id="page_num"></span> / <span id="page_count"></span>
+        </div>
+        
+        <div id="prev-overlay" class="page-nav-overlay" onclick="onPrevPage()">
+            <span class="nav-icon">&lt;</span>
+        </div>
+        <div id="next-overlay" class="page-nav-overlay" onclick="onNextPage()">
+            <span class="nav-icon">&gt;</span>
+        </div>
+        
+        <canvas id="pdf-canvas"></canvas>
+    </div>
+
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+        let pdfDoc = null;
+        let pageNum = 1;
+        let canvas = document.getElementById('pdf-canvas');
+        let ctx = canvas.getContext('2d');
+        const scale = 1.5;
+
+        // Swipe variables
+        let touchstartX = 0;
+        let touchendX = 0;
+        const swipeThreshold = 50; 
+
+        // Get elements
+        const floatingPageInfo = document.getElementById('floating-page-info');
+        const pdfContainerWrapper = document.getElementById('pdf-container-wrapper');
+        const fileInput = document.getElementById('pdfFile');
+        const clockElement = document.getElementById('live-clock'); 
+
+        // --- CLOCK FUNCTION UPDATE (12-Hour Format) ---
+        function updateClock() {
+            const now = new Date();
+            // Format time as HH:MM:SS AM/PM
+            const timeString = now.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit', 
+                hour12: true // Set to true for 12-hour format with AM/PM
+            });
+            clockElement.textContent = timeString;
+        }
+
+        // Initialize clock immediately and then update every second
+        updateClock();
+        setInterval(updateClock, 1000); 
+        // --- END CLOCK FUNCTION ---
+
+
+        function updatePageDisplay() {
+            document.getElementById('page_num').textContent = pageNum;
+        }
+
+        function renderPage(num) {
+            pageNum = num;
+            updatePageDisplay();
+
+            pdfDoc.getPage(num).then(function(page) {
+                const viewport = page.getViewport({ scale: scale });
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                const renderContext = {
+                    canvasContext: ctx,
+                    viewport: viewport
+                };
+                page.render(renderContext);
+            });
+        }
+
+        function queueRenderPage(num) {
+            if (pdfDoc) {
+                renderPage(num);
+            }
+        }
+
+        window.onPrevPage = function() {
+            if (pageNum <= 1) {
+                return;
+            }
+            queueRenderPage(--pageNum);
+        }
+
+        window.onNextPage = function() {
+            if (pageNum >= pdfDoc.numPages) {
+                return;
+            }
+            queueRenderPage(++pageNum);
+        }
+        
+        // --- SWIPE LOGIC (Attached to Canvas) ---
+        function checkDirection() {
+            if (touchendX < touchstartX - swipeThreshold) {
+                onNextPage();
+            }
+            if (touchendX > touchstartX + swipeThreshold) {
+                onPrevPage();
+            }
+        }
+
+        canvas.addEventListener('touchstart', e => {
+            touchstartX = e.changedTouches[0].screenX;
+        }, false);
+
+        canvas.addEventListener('touchend', e => {
+            touchendX = e.changedTouches[0].screenX;
+            checkDirection();
+        }, false);
+        // --- END SWIPE LOGIC ---
+
+
+        fileInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            
+            // Update the custom button text to show the filename after selection
+            const label = document.getElementById('custom-file-label');
+            label.textContent = `📂 File Selected: ${file.name}`;
+
+
+            if (file && file.type === 'application/pdf') {
+                const fileReader = new FileReader();
+                
+                fileReader.onload = function() {
+                    const typedarray = new Uint8Array(this.result);
+                    
+                    pdfjsLib.getDocument(typedarray).promise.then(function(pdf) {
+                        pdfDoc = pdf;
+                        document.getElementById('page_count').textContent = pdf.numPages;
+                        
+                        pdfContainerWrapper.style.display = 'inline-block';
+                        floatingPageInfo.style.display = 'block';
+
+                        renderPage(1);
+                    }).catch(function(error) {
+                         alert('Error loading PDF document: ' + error.message);
+                    });
+                };
+                
+                fileReader.readAsArrayBuffer(file);
+            } else {
+                alert('Please select a valid PDF file.');
+            }
+        });
+    </script>
+</body>
+</html>
