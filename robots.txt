@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 
 # Direct search engines to the location of your sitemap
-Sitemap: https://tyope22.github.io/online-pdf-reader/sitemap.xml
+Sitemap: https://tyope22.github.io/online-pdf-reader/sitemap_index.xml
