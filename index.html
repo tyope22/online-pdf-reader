@@ -2,124 +2,148 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A4 Passport Grid Generator</title>
-    <!-- Loads jsPDF library safely to handle high-res PDF rendering -->
-    <script src="https://cloudflare.com"></script>
+    <title>Photo Grid Coordinate Calculator</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f3f4f6; margin: 0; padding: 40px; color: #333; display: flex; justify-content: center; }
-        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); max-width: 450px; width: 100%; text-align: center; }
-        h2 { margin-top: 0; color: #111; font-size: 22px; }
-        p { color: #666; font-size: 14px; margin-bottom: 24px; line-height: 1.5; }
-        input[type="file"] { display: none; }
-        .file-label { display: block; background: #f9fafb; border: 2px dashed #d1d5db; padding: 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-weight: 500; }
-        .file-label:hover { border-color: #3b82f6; background: #eff6ff; }
-        button { background: #2563eb; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 20px; width: 100%; transition: background 0.2s; }
-        button:hover { background: #1d4ed8; }
-        button:disabled { background: #9ca3af; cursor: not-allowed; }
-        #status { margin-top: 15px; font-size: 13px; font-weight: bold; color: #059669; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f1f5f9; margin: 0; padding: 25px; display: flex; gap: 20px; height: 100vh; box-sizing: border-box; }
+        .input-panel { background: white; width: 350px; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 14px; box-sizing: border-box; }
+        .output-panel { flex: 1; background: #0f172a; color: #38bdf8; padding: 20px; border-radius: 10px; display: flex; flex-direction: column; box-sizing: border-box; }
+        h3 { margin: 0 0 10px 0; font-size: 18px; color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
+        .out-title { color: #f8fafc; border-bottom: 2px solid #334155; }
+        .input-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        label { font-size: 13px; font-weight: 600; color: #475569; }
+        input, select { width: 110px; padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; text-align: right; box-sizing: border-box; }
+        select { text-align: left; }
+        button { background: #0284c7; color: white; border: none; padding: 12px; border-radius: 6px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #0369a1; }
+        .log-area { font-family: 'Courier New', Courier, monospace; font-size: 14px; line-height: 1.6; overflow-y: auto; flex: 1; background: #020617; padding: 15px; border-radius: 6px; border: 1px solid #1e293b; color: #cbd5e1; margin-top: 10px; white-space: pre; }
+        .coordinate-highlight { color: #38bdf8; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>A4 Passport Grid Generator</h2>
-    <p>Upload your 72 DPI image. The code will automatically upscale it, build a perfect 6x6 grid on a 300 DPI A4 sheet, and add 50px separating gaps after rows 2 and 4.</p>
+<div class="input-panel">
+    <h3>Grid Settings</h3>
     
-    <label for="imageLoader" class="file-label" id="dropzone">
-        Click to Choose Your Photo
-    </label>
-    <input type="file" id="imageLoader" accept="image/*">
-    
-    <button id="generateBtn" disabled>Generate Print PDF</button>
-    <div id="status"></div>
+    <div class="input-row">
+        <label>Page Format</label>
+        <select id="pageSize">
+            <option value="A4">A4 (2480 × 3508 px)</option>
+            <option value="A5">A5 (1748 × 2480 px)</option>
+        </select>
+    </div>
+
+    <div class="input-row">
+        <label>Photo Width (px)</label>
+        <input type="number" id="photoW" value="405">
+    </div>
+
+    <div class="input-row">
+        <label>Photo Height (px)</label>
+        <input type="number" id="photoH" value="518">
+    </div>
+
+    <div class="input-row">
+        <label>Normal Gap (px)</label>
+        <input type="number" id="normalGap" value="5">
+    </div>
+
+    <div class="input-row">
+        <label>Separator Gap (px)</label>
+        <input type="number" id="separatorGap" value="50">
+    </div>
+
+    <div class="input-row">
+        <label>Start X Margin (px)</label>
+        <input type="number" id="startX" value="5">
+    </div>
+
+    <div class="input-row">
+        <label>Start Y Margin (px)</label>
+        <input type="number" id="startY" value="40">
+    </div>
+
+    <div class="input-row">
+        <label>Photos per Row</label>
+        <input type="number" id="colsCount" value="6">
+    </div>
+
+    <div class="input-row">
+        <label>Photos per Column</label>
+        <input type="number" id="rowsCount" value="6">
+    </div>
+
+    <button onclick="calculateGrid()">Calculate Coordinates</button>
+</div>
+
+<div class="output-panel">
+    <h3 class="out-title">Calculated Pixel Coordinates</h3>
+    <div class="log-area" id="outputLog">Adjust your input variables and click "Calculate Coordinates" to view your exact canvas pixel matrix mapping.</div>
 </div>
 
 <script>
-    const imageLoader = document.getElementById('imageLoader');
-    const generateBtn = document.getElementById('generateBtn');
-    const dropzone = document.getElementById('dropzone');
-    const status = document.getElementById('status');
-    let loadedImage = null;
-
-    // Handles picking the photo
-    imageLoader.addEventListener('change', (e) => {
-        const reader = new FileReader();
-        reader.onload = function(event){
-            loadedImage = new Image();
-            loadedImage.onload = function(){
-                dropzone.innerText = "✓ Image Loaded Successfully";
-                dropzone.style.borderColor = "#10b981";
-                generateBtn.disabled = false;
-            }
-            loadedImage.src = event.target.result;
-        }
-        if(e.target.files[0]) reader.readAsDataURL(e.target.files[0]);
-    });
-
-    // The core mathematical layout logic
-    generateBtn.addEventListener('click', () => {
-        status.innerText = "Processing high-res math calculations...";
+    function calculateGrid() {
+        // Grab values from inputs
+        const sizeKey = document.getElementById('pageSize').value;
+        const pageW = sizeKey === 'A4' ? 2480 : 1748;
+        const pageH = sizeKey === 'A4' ? 3508 : 2480;
         
-        // 1. Blueprint Math Definitions (300 DPI A4)
-        const CANVAS_W = 2480;
-        const CANVAS_H = 3508;
-        const PHOTO_W = 405;
-        const PHOTO_H = 518;
-        const NORMAL_GAP = 5;
-        const SEPARATOR_GAP = 50;
-        const START_X = 5;
-        const START_Y = 40;
+        const photoW = parseInt(document.getElementById('photoW').value) || 0;
+        const photoH = parseInt(document.getElementById('photoH').value) || 0;
+        const normalGap = parseInt(document.getElementById('normalGap').value) || 0;
+        const separatorGap = parseInt(document.getElementById('separatorGap').value) || 0;
+        const startX = parseInt(document.getElementById('startX').value) || 0;
+        const startY = parseInt(document.getElementById('startY').value) || 0;
+        const cols = parseInt(document.getElementById('colsCount').value) || 0;
+        const rows = parseInt(document.getElementById('rowsCount').value) || 0;
 
-        // 2. Setup an offline high-resolution canvas
-        const canvas = document.createElement('canvas');
-        canvas.width = CANVAS_W;
-        canvas.height = CANVAS_H;
-        const ctx = canvas.getContext('2d');
+        let currentY = startY;
+        let log = `=== CALCULATED MASTER MAP (${sizeKey} @ 300 DPI) ===\n`;
+        log += `Canvas Size Boundary: ${pageW}px wide by ${pageH}px high\n`;
+        log += `Individual Photo Footprint: ${photoW}px × ${photoH}px\n`;
+        log += `---------------------------------------------------------\n\n`;
 
-        // Paint background clean white
-        ctx.fillStyle = "white";
-        ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
-
-        // 3. Precise grid positioning loop
-        let currentY = START_Y;
-
-        for (let row = 1; row <= 6; row++) {
-            let currentX = START_X;
+        // Loop to generate pure grid math values
+        for (let r = 1; r <= rows; r++) {
+            let currentX = startX;
+            log += `[ROW ${r}] -----------------------------------------------\n`;
             
-            for (let col = 1; col <= 6; col++) {
-                // Instantly injects photo into exact coordinate
-                ctx.drawImage(loadedImage, currentX, currentY, PHOTO_W, PHOTO_H);
+            for (let c = 1; c <= cols; c++) {
+                log += `  Photo Position (Col ${c}, Row ${r}):   X = ${currentX.toString().padEnd(5)}  Y = ${currentY}\n`;
                 
-                // Jump horizontally (Width + 5px)
-                currentX += PHOTO_W + NORMAL_GAP;
+                // Advance X to calculate the next column's starting point
+                currentX += photoW + normalGap;
             }
+            
+            // Check if the page dimensions are completely breached horizontally
+            if ((currentX - normalGap) > pageW) {
+                log += `  ⚠️ WARNING: Row ${r} exceeds your canvas width (${pageW}px) by ${(currentX - normalGap) - pageW}px!\n`;
+            }
+            log += `\n`;
 
-            // Handles row gaps and visual breaks
-            if (row === 2 || row === 4) {
-                currentY += PHOTO_H + SEPARATOR_GAP; // 50px type separator break
+            // Calculate the Y coordinate for the next row downward
+            // Injects a heavy custom spacer after every 2 rows
+            if (r % 2 === 0 && r !== rows) {
+                currentY += photoH + separatorGap;
             } else {
-                currentY += PHOTO_H + NORMAL_GAP;    // Standard 5px gap
+                currentY += photoH + normalGap;
             }
         }
 
-        // 4. Save directly as a clean PDF download
-        status.innerText = "Compiling PDF document...";
-        const imgData = canvas.toDataURL('image/jpeg', 1.0);
+        // Print page constraint sanity checks
+        const totalUsedHeight = currentY - normalGap;
+        log += `---------------------------------------------------------\n`;
+        log += `PAGE SUMMARY LOG:\n`;
+        log += ` -> Maximum Right Edge Reached: ${startX + (cols * photoW) + ((cols - 1) * normalGap)}px / ${pageW}px\n`;
+        log += ` -> Total Cumulative Grid Height: ${totalUsedHeight}px / ${pageH}px\n`;
         
-        const { jsPDF } = window.jspdf;
-        // Forces dimensions to perfectly match physical A4 paper bounds
-        const pdf = new jsPDF({
-            orientation: 'portrait',
-            unit: 'mm',
-            format: 'a4'
-        });
+        if (totalUsedHeight > pageH) {
+            log += ` -> ❌ ERROR: Your grid heights run off the sheet by ${totalUsedHeight - pageH}px! Reduce your photo height or row counts.\n`;
+        } else {
+            log += ` -> Safe Space Remaining at Bottom: ${pageH - totalUsedHeight}px\n`;
+        }
 
-        pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-        pdf.save('passport_print_sheet.pdf');
-        
-        status.innerText = "✓ Success! PDF Downloaded.";
-    });
+        document.getElementById('outputLog').textContent = log;
+    }
 </script>
 
 </body>
