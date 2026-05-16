@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A4 Passport Grid Generator</title>
+    <!-- Loads jsPDF library safely to handle high-res PDF rendering -->
+    <script src="https://cloudflare.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f3f4f6; margin: 0; padding: 40px; color: #333; display: flex; justify-content: center; }
+        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); max-width: 450px; width: 100%; text-align: center; }
+        h2 { margin-top: 0; color: #111; font-size: 22px; }
+        p { color: #666; font-size: 14px; margin-bottom: 24px; line-height: 1.5; }
+        input[type="file"] { display: none; }
+        .file-label { display: block; background: #f9fafb; border: 2px dashed #d1d5db; padding: 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-weight: 500; }
+        .file-label:hover { border-color: #3b82f6; background: #eff6ff; }
+        button { background: #2563eb; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 20px; width: 100%; transition: background 0.2s; }
+        button:hover { background: #1d4ed8; }
+        button:disabled { background: #9ca3af; cursor: not-allowed; }
+        #status { margin-top: 15px; font-size: 13px; font-weight: bold; color: #059669; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>A4 Passport Grid Generator</h2>
+    <p>Upload your 72 DPI image. The code will automatically upscale it, build a perfect 6x6 grid on a 300 DPI A4 sheet, and add 50px separating gaps after rows 2 and 4.</p>
+    
+    <label for="imageLoader" class="file-label" id="dropzone">
+        Click to Choose Your Photo
+    </label>
+    <input type="file" id="imageLoader" accept="image/*">
+    
+    <button id="generateBtn" disabled>Generate Print PDF</button>
+    <div id="status"></div>
+</div>
+
+<script>
+    const imageLoader = document.getElementById('imageLoader');
+    const generateBtn = document.getElementById('generateBtn');
+    const dropzone = document.getElementById('dropzone');
+    const status = document.getElementById('status');
+    let loadedImage = null;
+
+    // Handles picking the photo
+    imageLoader.addEventListener('change', (e) => {
+        const reader = new FileReader();
+        reader.onload = function(event){
+            loadedImage = new Image();
+            loadedImage.onload = function(){
+                dropzone.innerText = "✓ Image Loaded Successfully";
+                dropzone.style.borderColor = "#10b981";
+                generateBtn.disabled = false;
+            }
+            loadedImage.src = event.target.result;
+        }
+        if(e.target.files[0]) reader.readAsDataURL(e.target.files[0]);
+    });
+
+    // The core mathematical layout logic
+    generateBtn.addEventListener('click', () => {
+        status.innerText = "Processing high-res math calculations...";
+        
+        // 1. Blueprint Math Definitions (300 DPI A4)
+        const CANVAS_W = 2480;
+        const CANVAS_H = 3508;
+        const PHOTO_W = 405;
+        const PHOTO_H = 518;
+        const NORMAL_GAP = 5;
+        const SEPARATOR_GAP = 50;
+        const START_X = 5;
+        const START_Y = 40;
+
+        // 2. Setup an offline high-resolution canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = CANVAS_W;
+        canvas.height = CANVAS_H;
+        const ctx = canvas.getContext('2d');
+
+        // Paint background clean white
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+        // 3. Precise grid positioning loop
+        let currentY = START_Y;
+
+        for (let row = 1; row <= 6; row++) {
+            let currentX = START_X;
+            
+            for (let col = 1; col <= 6; col++) {
+                // Instantly injects photo into exact coordinate
+                ctx.drawImage(loadedImage, currentX, currentY, PHOTO_W, PHOTO_H);
+                
+                // Jump horizontally (Width + 5px)
+                currentX += PHOTO_W + NORMAL_GAP;
+            }
+
+            // Handles row gaps and visual breaks
+            if (row === 2 || row === 4) {
+                currentY += PHOTO_H + SEPARATOR_GAP; // 50px type separator break
+            } else {
+                currentY += PHOTO_H + NORMAL_GAP;    // Standard 5px gap
+            }
+        }
+
+        // 4. Save directly as a clean PDF download
+        status.innerText = "Compiling PDF document...";
+        const imgData = canvas.toDataURL('image/jpeg', 1.0);
+        
+        const { jsPDF } = window.jspdf;
+        // Forces dimensions to perfectly match physical A4 paper bounds
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+        });
+
+        pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+        pdf.save('passport_print_sheet.pdf');
+        
+        status.innerText = "✓ Success! PDF Downloaded.";
+    });
+</script>
+
+</body>
+</html>
